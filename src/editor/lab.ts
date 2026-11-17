@@ -149,7 +149,7 @@ export function renderLab(host: HTMLElement, lab: LabContext): () => void {
         ctx.fillStyle = guide; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
         const cx = ox + (SAMPLE_BOX / 2) * scale;
         if (ref) {
-          const own = `V ${Math.round(w)}  `, refText = `${ref.char} ${REFERENCE_NAME} V ${ref.stemV.toFixed(1)}`;
+          const own = `V ${Math.round(w)}  `, refText = `${ref.char} ${REFERENCE_NAME} V ${Math.round(ref.stemV)}`;
           const wOwn = ctx.measureText(own).width, x0 = cx - (wOwn + ctx.measureText(refText).width) / 2;
           ctx.textAlign = 'left';
           ctx.fillText(own, x0, r.height - 5);
