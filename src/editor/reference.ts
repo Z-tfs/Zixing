@@ -3,7 +3,10 @@ import data from './reference/source-han-sans-regular.json';
 
 /** Vertical stem of the reference font in font units, measured on 十. */
 export const REFERENCE_STEM_V = 81;
-export const REFERENCE_NAME = `${data.font} ${data.style}`;
+/** Horizontal stem of the reference font in font units, measured on 十. */
+export const REFERENCE_STEM_H = 77;
+/** Short name for captions; the full name is Source Han Sans SC. */
+export const REFERENCE_NAME = `SHS ${data.style}`;
 
 /**
  * Where each stroke sits inside its reference glyph: key points in glyph units,
@@ -23,6 +26,8 @@ export interface StrokeReference {
   contours: Contour[];
   /** Reference vertical stem, directly comparable to the weight (V) of the sample. */
   stemV: number;
+  /** Reference horizontal stem. */
+  stemH: number;
 }
 
 /** Reference glyph for a stroke, translated so the anchored stroke end lies on its sample key point (no scaling). */
@@ -39,5 +44,5 @@ export function strokeReference(type: StrokeType, sample: readonly Point[], anch
     ...(n.in ? { in: map(n.in) } : {}),
     ...(n.out ? { out: map(n.out) } : {}),
   })));
-  return { char: a.char, contours, stemV: REFERENCE_STEM_V };
+  return { char: a.char, contours, stemV: REFERENCE_STEM_V, stemH: REFERENCE_STEM_H };
 }
