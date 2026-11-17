@@ -16,6 +16,8 @@ export const REFERENCE_NAME = `SHS ${data.style}`;
 const ALIGN: Partial<Record<StrokeType, { char: keyof typeof data.glyphs; pts: Point[] }>> = {
   heng: { char: '十', pts: [[55, 427.5], [952, 427.5]] },
   shu: { char: '十', pts: [[501.5, 839], [501.5, -80]] },
+  // Start on the centerline of the left vertical, corner on both centerlines, end at the foot of the right vertical.
+  hengzhe: { char: '口', pts: [[166, 697.5], [836, 697.5], [836, -51]] },
 };
 
 /** Which end of the reference stroke is placed on the matching sample key point. */
