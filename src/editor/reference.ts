@@ -20,12 +20,12 @@ const ALIGN: Partial<Record<StrokeType, { char: keyof typeof data.glyphs; pts: P
   hengzhe: { char: '口', pts: [[166, 697.5], [836, 697.5], [836, -51]] },
 };
 
-/** Which end of the reference stroke is placed on the matching sample key point. */
-export type ReferenceAnchor = 'start' | 'end';
+/** Which key point of the reference stroke is placed on the matching sample key point. Strokes without a corner use the start instead. */
+export type ReferenceAnchor = 'start' | 'corner' | 'end';
 
 export interface StrokeReference {
   char: string;
-  /** Whole reference glyph at its original size, moved so the anchored stroke end lies on its sample key point. */
+  /** Whole reference glyph at its original size, moved so the anchored key point lies on its sample key point. */
   contours: Contour[];
   /** Reference vertical stem, directly comparable to the weight (V) of the sample. */
   stemV: number;
@@ -33,12 +33,13 @@ export interface StrokeReference {
   stemH: number;
 }
 
-/** Reference glyph for a stroke, translated so the anchored stroke end lies on its sample key point (no scaling). */
+/** Reference glyph for a stroke, translated so the anchored key point lies on its sample key point (no scaling). */
 export function strokeReference(type: StrokeType, sample: readonly Point[], anchor: ReferenceAnchor = 'start'): StrokeReference | null {
   const a = ALIGN[type];
   if (!a) return null;
-  const from = anchor === 'start' ? a.pts[0] : a.pts[a.pts.length - 1];
-  const to = anchor === 'start' ? sample[0] : sample[sample.length - 1];
+  const last = a.pts.length - 1;
+  const k = anchor === 'end' ? last : anchor === 'corner' && last === 2 ? 1 : 0;
+  const from = a.pts[k], to = sample[k];
   const dx = to[0] - from[0], dy = to[1] - from[1];
   const map = (p: Point): Point => [p[0] + dx, p[1] + dy];
   const source = data.glyphs[a.char].contours as unknown as Contour[];

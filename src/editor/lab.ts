@@ -71,11 +71,13 @@ export function renderLab(host: HTMLElement, lab: LabContext): () => void {
     b.onclick = () => { lab.modes.has(m.id) ? lab.modes.delete(m.id) : lab.modes.add(m.id); b.classList.toggle('on'); syncAnchor(); draw(); };
     bar.append(b);
   }
-  const anchors = (['start', 'end'] as const).map((id) => {
+  const anchors = (['start', 'corner', 'end'] as const).map((id) => {
     const b = document.createElement('button');
     b.className = 'chip';
-    b.textContent = id === 'start' ? 'Start' : 'End';
-    b.title = `Align the ${id} of the reference stroke with the sample`;
+    b.textContent = id[0].toUpperCase() + id.slice(1);
+    b.title = id === 'corner'
+      ? 'Align the corner of the reference stroke with the sample; strokes without a corner align at the start'
+      : `Align the ${id} of the reference stroke with the sample`;
     b.onclick = () => { lab.reference.anchor = id; syncAnchor(); draw(); };
     return { id, b };
   });
