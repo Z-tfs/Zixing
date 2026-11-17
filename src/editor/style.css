@@ -58,7 +58,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .edit { position: absolute; inset: 0; }
 .edit canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: var(--canvas); touch-action: none; }
 .edit .hud { position: absolute; left: 12px; top: 12px; color: #6f6e69; font-size: 11px; pointer-events: none; }
-.edit .zoom { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
+.edit .zoom { position: absolute; right: 12px; bottom: 68px; z-index: 2; display: flex; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
 .edit .zoom button { background: var(--panel); padding: 4px 10px; color: var(--text); }
 .strip { position: absolute; left: 0; right: 0; bottom: 0; height: 56px; background: rgba(35,35,37,.94); border-top: 1px solid var(--line); display: flex; align-items: center; gap: 2px; padding: 0 12px; }
 .strip button { width: 40px; height: 40px; font-size: 22px; color: var(--mute); border-radius: 2px; font-family: "PingFang SC", "Noto Sans CJK SC", sans-serif; }

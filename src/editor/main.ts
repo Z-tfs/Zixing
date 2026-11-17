@@ -90,6 +90,7 @@ function renderTabs() {
 }
 function setView(v: ViewId) {
   state.view = v;
+  history.replaceState(null, '', '#' + v);
   renderTabs();
   renderView();
 }
@@ -415,6 +416,8 @@ window.addEventListener('keydown', (ev) => {
 });
 window.addEventListener('resize', () => redraw());
 
+const initial = VIEWS.find((v) => v.id === location.hash.slice(1));
+if (initial) state.view = initial.id;
 renderTabs();
 renderInspector();
 renderView();
