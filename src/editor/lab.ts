@@ -2,7 +2,7 @@ import {
   SAMPLE_BOX, STROKE_LABELS, STROKE_SAMPLES, STROKE_TYPES, buildStroke, isCurve,
   type Contour, type GlobalParams, type StrokeParamSet, type StrokeType,
 } from '../core';
-import { REFERENCE_NAME, strokeReference } from './reference';
+import { REFERENCE_NAME, strokeReference, type ReferenceAnchor } from './reference';
 
 export type LabMode = 'fill' | 'nodes' | 'skeleton' | 'reference';
 export interface LabContext {
@@ -10,6 +10,8 @@ export interface LabContext {
   strokeParams: StrokeParamSet;
   selected: StrokeType;
   modes: Set<LabMode>;
+  /** Reference overlay options; mutated by the toolbar. */
+  reference: { anchor: ReferenceAnchor };
   onSelect(type: StrokeType): void;
 }
 
@@ -66,9 +68,20 @@ export function renderLab(host: HTMLElement, lab: LabContext): () => void {
     const b = document.createElement('button');
     b.className = 'chip' + (lab.modes.has(m.id) ? ' on' : '');
     b.textContent = m.label;
-    b.onclick = () => { lab.modes.has(m.id) ? lab.modes.delete(m.id) : lab.modes.add(m.id); b.classList.toggle('on'); draw(); };
+    b.onclick = () => { lab.modes.has(m.id) ? lab.modes.delete(m.id) : lab.modes.add(m.id); b.classList.toggle('on'); syncAnchor(); draw(); };
     bar.append(b);
   }
+  const anchor = document.createElement('button');
+  anchor.className = 'chip';
+  anchor.title = 'Which end of the reference stroke is aligned with the sample';
+  const syncAnchor = () => {
+    anchor.textContent = `Align: ${lab.reference.anchor}`;
+    anchor.disabled = !lab.modes.has('reference');
+    anchor.classList.toggle('on', !anchor.disabled);
+  };
+  anchor.onclick = () => { lab.reference.anchor = lab.reference.anchor === 'start' ? 'end' : 'start'; syncAnchor(); draw(); };
+  syncAnchor();
+  bar.append(anchor);
   const note = document.createElement('span');
   note.textContent = 'Each stroke at three weights. Click a stroke to edit its template.';
   bar.append(note);
@@ -111,7 +124,7 @@ export function renderLab(host: HTMLElement, lab: LabContext): () => void {
         nodes = c.length;
         const showNodes = lab.modes.has('nodes');
         // Reference sits behind the current-weight sample only; its outline is repeated on top below.
-        const ref = lab.modes.has('reference') && i === 1 ? strokeReference(type, STROKE_SAMPLES[type]) : null;
+        const ref = lab.modes.has('reference') && i === 1 ? strokeReference(type, STROKE_SAMPLES[type], lab.reference.anchor) : null;
         const traceRef = () => {
           ctx.beginPath();
           ctx.rect(ox - pad * scale, 0, slot * scale, r.height - 18);

@@ -14,19 +14,24 @@ const ALIGN: Partial<Record<StrokeType, { char: keyof typeof data.glyphs; pts: P
   heng: { char: '十', pts: [[55, 427.5], [952, 427.5]] },
 };
 
+/** Which end of the reference stroke is placed on the matching sample key point. */
+export type ReferenceAnchor = 'start' | 'end';
+
 export interface StrokeReference {
   char: string;
-  /** Whole reference glyph at its original size, moved so its stroke starts at the first sample key point. */
+  /** Whole reference glyph at its original size, moved so the anchored stroke end lies on its sample key point. */
   contours: Contour[];
   /** Reference vertical stem, directly comparable to the weight (V) of the sample. */
   stemV: number;
 }
 
-/** Reference glyph for a stroke, translated so the stroke starts at the first sample key point (no scaling). */
-export function strokeReference(type: StrokeType, sample: readonly Point[]): StrokeReference | null {
+/** Reference glyph for a stroke, translated so the anchored stroke end lies on its sample key point (no scaling). */
+export function strokeReference(type: StrokeType, sample: readonly Point[], anchor: ReferenceAnchor = 'start'): StrokeReference | null {
   const a = ALIGN[type];
   if (!a) return null;
-  const dx = sample[0][0] - a.pts[0][0], dy = sample[0][1] - a.pts[0][1];
+  const from = anchor === 'start' ? a.pts[0] : a.pts[a.pts.length - 1];
+  const to = anchor === 'start' ? sample[0] : sample[sample.length - 1];
+  const dx = to[0] - from[0], dy = to[1] - from[1];
   const map = (p: Point): Point => [p[0] + dx, p[1] + dy];
   const source = data.glyphs[a.char].contours as unknown as Contour[];
   const contours = source.map((c) => c.map((n) => ({
