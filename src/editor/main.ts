@@ -5,6 +5,7 @@ import {
   type GlobalParams, type ParamSpec, type Rect, type StrokeType,
 } from '../core';
 import { renderLab, type LabMode } from './lab';
+import type { ReferenceAnchor } from './reference';
 
 // ---------- state ----------
 type ViewId = 'overview' | 'edit' | 'strokes' | 'waterfall' | 'gray';
@@ -32,7 +33,7 @@ const state = {
   strokeParams: defaultStrokeParams(),
   labStroke: 'heng' as StrokeType,
   labModes: new Set<LabMode>(['fill', 'nodes']),
-  labReference: { anchor: 'start' as 'start' | 'end' },
+  labReference: { anchor: 'start' as ReferenceAnchor },
   char: CHARSET[0].char as string,
   hot: null as string | null,
   layers: new Set<Layer>(['em', 'face', 'center', 'gravity', 'baseline']),
