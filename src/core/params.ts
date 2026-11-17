@@ -4,7 +4,7 @@ export interface ParamSpec {
   key: string;
   en: string;
   zh: string;
-  group: 'Metrics' | 'Structure' | 'Stroke';
+  group: 'Metrics' | 'Structure' | 'Stroke' | 'Template';
   min: number;
   max: number;
   step: number;
@@ -34,8 +34,8 @@ export const HEI_DEFAULTS: GlobalParams = {
   weight: 78,
   contrast: 0.12,
   cornerRadius: 0,
-  flare: 0.04,
-  waist: 0.02,
+  flare: 0.02,
+  waist: 0.01,
 };
 
 export const GLOBAL_SPECS: ParamSpec[] = [

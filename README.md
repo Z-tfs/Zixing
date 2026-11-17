@@ -2,7 +2,7 @@
 
 A parametric Chinese type engine for designers and brands: numeric control plus on-canvas visual anchors, with Latin/Chinese pairing in mind.
 
-Status: **Milestone 1, Phase 0** — project scaffold, metric frame and editor shell. No outlines yet.
+Status: **Milestone 1, Phase 1** — the 8 stroke templates and the Stroke Lab are in; glyphs are not assembled yet.
 
 ## Milestone 1
 
@@ -11,8 +11,8 @@ Status: **Milestone 1, Phase 0** — project scaffold, metric frame and editor s
 | Phase | Deliverable | State |
 |---|---|---|
 | 0 | Repo, core types, metric frame, editor shell | done |
-| 1 | 8 parametric stroke templates + Stroke Lab | next |
-| 2 | Skeleton normalizer + skeleton editor; 10 skeletons locked | |
+| 1 | 8 parametric stroke templates + Stroke Lab | first pass, tuning against reference pending |
+| 2 | Skeleton normalizer + skeleton editor; 10 skeletons locked | next |
 | 3 | Assembly, join analysis, overlap removal, optical corrections | |
 | 4 | Font overview, waterfall, gray check | |
 | 5 | Export (SVG / UFO / OTF) + validation | |
@@ -32,7 +32,7 @@ UPM 1000 · ideographic em box y −120…880 · Latin baseline y 0 · face box 
 ## Layout
 
 ```
-src/core/     engine: types, parameters, metric frame (pure functions, tested)
+src/core/     engine: types, parameters, metric frame, stroke templates (pure functions, tested)
 src/editor/   editor UI (Vite + TypeScript, Canvas 2D)
 skeletons/    hand-locked skeleton data, one JSON per character
 ```

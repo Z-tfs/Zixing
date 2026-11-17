@@ -1,8 +1,10 @@
 import './style.css';
 import {
-  CHARSET, GLOBAL_SPECS, HEI_DEFAULTS, UPM, clampParam, horizontalStem, metricFrame,
-  type GlobalParams, type ParamSpec, type Rect,
+  CHARSET, GLOBAL_SPECS, HEI_DEFAULTS, STROKE_LABELS, STROKE_SPECS, UPM, clampParam, defaultStrokeParams,
+  horizontalStem, metricFrame,
+  type GlobalParams, type ParamSpec, type Rect, type StrokeType,
 } from '../core';
+import { renderLab, type LabMode } from './lab';
 
 // ---------- state ----------
 type ViewId = 'overview' | 'edit' | 'strokes' | 'waterfall' | 'gray';
@@ -27,6 +29,9 @@ const LAYERS: { id: Layer; label: string }[] = [
 const state = {
   view: 'overview' as ViewId,
   params: { ...HEI_DEFAULTS } as GlobalParams,
+  strokeParams: defaultStrokeParams(),
+  labStroke: 'heng' as StrokeType,
+  labModes: new Set<LabMode>(['fill', 'nodes']),
   char: CHARSET[0].char as string,
   hot: null as string | null,
   layers: new Set<Layer>(['em', 'face', 'center', 'gravity', 'baseline']),
@@ -42,7 +47,7 @@ app.innerHTML = `
     <div class="brand">Zixing 字型<span>Hei · Regular</span></div>
     <div class="tabs" id="tabs"></div>
     <div class="spacer"></div>
-    <div class="meta">Milestone 1 · Phase 0</div>
+    <div class="meta">Milestone 1 · Phase 1</div>
   </div>
   <div class="view" id="view"></div>
   <div class="inspector" id="inspector"></div>
@@ -66,14 +71,13 @@ function fmt(spec: ParamSpec, v: number): string {
   if (spec.step >= 1) return String(Math.round(v));
   return v.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
 }
-function parse(spec: ParamSpec, s: string): number {
+function parse(spec: ParamSpec, s: string, current: number): number {
   const n = parseFloat(s);
-  if (Number.isNaN(n)) return (state.params as unknown as Record<string, number>)[spec.key];
+  if (Number.isNaN(n)) return current;
   return clampParam(spec, spec.unit === '%' ? n / 100 : n);
 }
-const getP = (k: string) => (state.params as unknown as Record<string, number>)[k];
-function setP(k: string, v: number) {
-  (state.params as unknown as Record<string, number>)[k] = v;
+const globals = () => state.params as unknown as Record<string, number>;
+function changed() {
   syncInspector();
   redraw();
 }
@@ -92,12 +96,39 @@ function setView(v: ViewId) {
   state.view = v;
   history.replaceState(null, '', '#' + v);
   renderTabs();
+  renderInspector();
   renderView();
 }
 
 // ---------- inspector ----------
-const inputs = new Map<string, { range: HTMLInputElement; num: HTMLInputElement; row: HTMLElement; spec: ParamSpec }>();
+interface Row { range: HTMLInputElement; num: HTMLInputElement; row: HTMLElement; spec: ParamSpec; get: () => number }
+const inputs = new Map<string, Row>();
 let $tip: HTMLElement, $derived: HTMLElement;
+
+function makeRow(id: string, spec: ParamSpec, get: () => number, set: (v: number) => void): HTMLElement {
+  const row = el('div', 'row');
+  const label = el('label');
+  label.append(spec.en, el('small', '', spec.zh + (spec.unit ? ' · ' + spec.unit : '')));
+  const range = el('input');
+  range.type = 'range'; range.min = String(spec.min); range.max = String(spec.max); range.step = String(spec.step);
+  const num = el('input');
+  num.type = 'number'; num.step = String(spec.unit === '%' ? spec.step * 100 : spec.step);
+  const apply = (v: number) => { set(v); changed(); };
+  range.oninput = () => apply(+range.value);
+  num.onchange = () => apply(parse(spec, num.value, get()));
+  // drag the label to scrub
+  label.onpointerdown = (ev) => {
+    const x0 = ev.clientX, v0 = get();
+    label.setPointerCapture(ev.pointerId);
+    label.onpointermove = (e) => apply(clampParam(spec, v0 + Math.round((e.clientX - x0) / 2) * spec.step * (e.shiftKey ? 10 : 1)));
+    label.onpointerup = () => { label.onpointermove = null; };
+  };
+  row.onmouseenter = () => setHot(id);
+  row.onmouseleave = () => setHot(null);
+  row.append(label, range, num);
+  inputs.set(id, { range, num, row, spec, get });
+  return row;
+}
 
 function renderInspector() {
   $insp.innerHTML = '';
@@ -105,29 +136,16 @@ function renderInspector() {
   for (const group of ['Structure', 'Stroke'] as const) {
     const g = el('div', 'group');
     g.append(el('h3', '', group));
-    for (const spec of GLOBAL_SPECS.filter((s) => s.group === group)) {
-      const row = el('div', 'row');
-      const label = el('label');
-      label.append(spec.en, el('small', '', spec.zh + (spec.unit ? ' · ' + spec.unit : '')));
-      const range = el('input');
-      range.type = 'range'; range.min = String(spec.min); range.max = String(spec.max); range.step = String(spec.step);
-      const num = el('input');
-      num.type = 'number'; num.step = String(spec.unit === '%' ? spec.step * 100 : spec.step);
-      range.oninput = () => setP(spec.key, +range.value);
-      num.onchange = () => setP(spec.key, parse(spec, num.value));
-      // drag the label to scrub
-      label.onpointerdown = (ev) => {
-        const x0 = ev.clientX, v0 = getP(spec.key);
-        label.setPointerCapture(ev.pointerId);
-        label.onpointermove = (e) => setP(spec.key, clampParam(spec, v0 + Math.round((e.clientX - x0) / 2) * spec.step * (e.shiftKey ? 10 : 1)));
-        label.onpointerup = () => { label.onpointermove = null; };
-      };
-      row.onmouseenter = () => setHot(spec.key);
-      row.onmouseleave = () => setHot(null);
-      row.append(label, range, num);
-      g.append(row);
-      inputs.set(spec.key, { range, num, row, spec });
+    for (const spec of GLOBAL_SPECS.filter((x) => x.group === group)) {
+      g.append(makeRow(spec.key, spec, () => globals()[spec.key], (v) => { globals()[spec.key] = v; }));
     }
+    $insp.append(g);
+  }
+  if (state.view === 'strokes') {
+    const type = state.labStroke, set = state.strokeParams[type];
+    const g = el('div', 'group');
+    g.append(el('h3', '', `Template · ${STROKE_LABELS[type].zh} ${type}`));
+    for (const spec of STROKE_SPECS[type]) g.append(makeRow('t:' + spec.key, spec, () => set[spec.key], (v) => { set[spec.key] = v; }));
     $insp.append(g);
   }
   const d = el('div', 'group');
@@ -154,16 +172,16 @@ function renderInspector() {
   $tip = el('div', 'tip');
   $insp.append($tip);
   const reset = el('button', 'reset', 'Reset to Hei defaults');
-  reset.onclick = () => { state.params = { ...HEI_DEFAULTS }; syncInspector(); redraw(); };
+  reset.onclick = () => { state.params = { ...HEI_DEFAULTS }; state.strokeParams = defaultStrokeParams(); renderInspector(); renderView(); };
   $insp.append(reset);
   syncInspector();
   setHot(null);
 }
 
 function syncInspector() {
-  for (const [k, o] of inputs) {
-    o.range.value = String(getP(k));
-    if (document.activeElement !== o.num) o.num.value = fmt(o.spec, getP(k));
+  for (const o of inputs.values()) {
+    o.range.value = String(o.get());
+    if (document.activeElement !== o.num) o.num.value = fmt(o.spec, o.get());
   }
   const m = metricFrame(state.params);
   const kv = (a: string, b: string) => `<div class="kv"><span>${a}</span><b>${b}</b></div>`;
@@ -177,7 +195,7 @@ function syncInspector() {
 function setHot(k: string | null) {
   state.hot = k;
   for (const [key, o] of inputs) o.row.classList.toggle('hot', key === k);
-  const spec = GLOBAL_SPECS.find((s) => s.key === k);
+  const spec = k ? inputs.get(k)?.spec : undefined;
   $tip.innerHTML = spec
     ? `<b>${spec.en} · ${spec.zh}</b>${spec.tip}`
     : `<b>Every glyph comes from the same numbers.</b>Hover a parameter to see where it acts; drag a label to scrub its value.`;
@@ -192,6 +210,7 @@ function renderView() {
   redraw = () => {};
   if (state.view === 'overview') renderOverview();
   else if (state.view === 'edit') renderEdit();
+  else if (state.view === 'strokes') renderStrokeLab();
   else renderEmpty(state.view);
   renderStatus();
 }
@@ -241,9 +260,18 @@ function renderOverview() {
   layout();
 }
 
+function renderStrokeLab() {
+  redraw = renderLab($view, {
+    params: state.params,
+    strokeParams: state.strokeParams,
+    selected: state.labStroke,
+    modes: state.labModes,
+    onSelect: (type) => { state.labStroke = type; renderInspector(); renderView(); },
+  });
+}
+
 function renderEmpty(v: ViewId) {
   const info: Record<string, [string, string, string]> = {
-    strokes: ['Phase 1', 'Stroke Lab', 'The 8 stroke templates (横 竖 撇 捺 点 提 横折 竖钩) at three weights, with node view, tuned against the Source Han Sans reference.'],
     waterfall: ['Phase 4', 'Waterfall', 'Editable text at 12 / 16 / 24 / 36 / 48 / 72 / 120 px, with optional Latin pairing.'],
     gray: ['Phase 4', 'Gray check', 'Running text at small size next to a blurred copy, plus a coverage chart per glyph.'],
   };
