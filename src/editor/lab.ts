@@ -2,21 +2,26 @@ import {
   SAMPLE_BOX, STROKE_LABELS, STROKE_SAMPLES, STROKE_TYPES, buildStroke, isCurve,
   type Contour, type GlobalParams, type StrokeParamSet, type StrokeType,
 } from '../core';
+import { REFERENCE_NAME, strokeReference, type ReferenceAnchor } from './reference';
 
-export type LabMode = 'fill' | 'nodes' | 'skeleton';
+export type LabMode = 'fill' | 'nodes' | 'skeleton' | 'reference';
 export interface LabContext {
   params: GlobalParams;
   strokeParams: StrokeParamSet;
   selected: StrokeType;
   modes: Set<LabMode>;
+  /** Reference overlay options; mutated by the toolbar. */
+  reference: { anchor: ReferenceAnchor };
   onSelect(type: StrokeType): void;
 }
 
 const LIGHT = 24, HEAVY = 170;
+const REFERENCE_COLOR = '#0e9aa7';
 const MODES: { id: LabMode; label: string }[] = [
   { id: 'fill', label: 'Filled' },
   { id: 'nodes', label: 'Outline + nodes' },
   { id: 'skeleton', label: 'Skeleton' },
+  { id: 'reference', label: 'Reference' },
 ];
 
 export function tracePath(ctx: CanvasRenderingContext2D, c: Contour, X: (x: number) => number, Y: (y: number) => number) {
@@ -63,9 +68,26 @@ export function renderLab(host: HTMLElement, lab: LabContext): () => void {
     const b = document.createElement('button');
     b.className = 'chip' + (lab.modes.has(m.id) ? ' on' : '');
     b.textContent = m.label;
-    b.onclick = () => { lab.modes.has(m.id) ? lab.modes.delete(m.id) : lab.modes.add(m.id); b.classList.toggle('on'); draw(); };
+    b.onclick = () => { lab.modes.has(m.id) ? lab.modes.delete(m.id) : lab.modes.add(m.id); b.classList.toggle('on'); syncAnchor(); draw(); };
     bar.append(b);
   }
+  const anchors = (['start', 'end'] as const).map((id) => {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = id === 'start' ? 'Start' : 'End';
+    b.title = `Align the ${id} of the reference stroke with the sample`;
+    b.onclick = () => { lab.reference.anchor = id; syncAnchor(); draw(); };
+    return { id, b };
+  });
+  const syncAnchor = () => {
+    const off = !lab.modes.has('reference');
+    for (const { id, b } of anchors) { b.disabled = off; b.classList.toggle('on', !off && lab.reference.anchor === id); }
+  };
+  const align = document.createElement('div');
+  align.className = 'lab-align';
+  align.append('Align', ...anchors.map((a) => a.b));
+  syncAnchor();
+  bar.append(align);
   const note = document.createElement('span');
   note.textContent = 'Each stroke at three weights. Click a stroke to edit its template.';
   bar.append(note);
@@ -107,6 +129,20 @@ export function renderLab(host: HTMLElement, lab: LabContext): () => void {
         const c = buildStroke(type, STROKE_SAMPLES[type], { ...lab.params, weight: w }, lab.strokeParams);
         nodes = c.length;
         const showNodes = lab.modes.has('nodes');
+        // Reference sits behind the current-weight sample only, clipped to the sample box; its outline is repeated on top below.
+        const ref = lab.modes.has('reference') && i === 1 ? strokeReference(type, STROKE_SAMPLES[type], lab.reference.anchor) : null;
+        const traceRef = () => {
+          ctx.beginPath();
+          ctx.rect(X(0), Y(SAMPLE_BOX), SAMPLE_BOX * scale, SAMPLE_BOX * scale);
+          ctx.clip();
+          ctx.beginPath();
+          for (const rc of ref!.contours) tracePath(ctx, rc, X, Y);
+        };
+        if (ref) {
+          ctx.save(); traceRef();
+          ctx.globalAlpha = .28; ctx.fillStyle = REFERENCE_COLOR; ctx.fill();
+          ctx.restore();
+        }
         if (lab.modes.has('fill')) {
           ctx.beginPath(); tracePath(ctx, c, X, Y);
           ctx.fillStyle = showNodes ? '#d9d7d0' : ink; ctx.fill();
@@ -124,8 +160,20 @@ export function renderLab(host: HTMLElement, lab: LabContext): () => void {
           for (const p of pts) { ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), 2.5, 0, Math.PI * 2); ctx.fill(); }
           ctx.restore();
         }
+        if (ref) {
+          ctx.save(); traceRef();
+          ctx.strokeStyle = REFERENCE_COLOR; ctx.lineWidth = 1; ctx.stroke();
+          ctx.restore();
+        }
         ctx.fillStyle = guide; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(`V ${Math.round(w)}`, ox + (SAMPLE_BOX / 2) * scale, r.height - 5);
+        const cx = ox + (SAMPLE_BOX / 2) * scale;
+        if (ref) {
+          const own = `V ${Math.round(w)}  `, refText = `${ref.char} ${REFERENCE_NAME} · V ${ref.stemV} · H ${ref.stemH}`;
+          const wOwn = ctx.measureText(own).width, x0 = cx - (wOwn + ctx.measureText(refText).width) / 2;
+          ctx.textAlign = 'left';
+          ctx.fillText(own, x0, r.height - 5);
+          ctx.fillStyle = REFERENCE_COLOR; ctx.fillText(refText, x0 + wOwn, r.height - 5);
+        } else ctx.fillText(`V ${Math.round(w)}`, cx, r.height - 5);
       });
       const l = STROKE_LABELS[type];
       head.innerHTML = `<b>${l.zh}</b> ${type} · ${l.en}<span>${nodes} nodes</span>`;

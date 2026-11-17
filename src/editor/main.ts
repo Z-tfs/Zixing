@@ -32,6 +32,7 @@ const state = {
   strokeParams: defaultStrokeParams(),
   labStroke: 'heng' as StrokeType,
   labModes: new Set<LabMode>(['fill', 'nodes']),
+  labReference: { anchor: 'start' as 'start' | 'end' },
   char: CHARSET[0].char as string,
   hot: null as string | null,
   layers: new Set<Layer>(['em', 'face', 'center', 'gravity', 'baseline']),
@@ -266,6 +267,7 @@ function renderStrokeLab() {
     strokeParams: state.strokeParams,
     selected: state.labStroke,
     modes: state.labModes,
+    reference: state.labReference,
     onSelect: (type) => { state.labStroke = type; renderInspector(); renderView(); },
   });
 }
