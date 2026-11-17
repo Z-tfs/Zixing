@@ -18,6 +18,8 @@ const ALIGN: Partial<Record<StrokeType, { char: keyof typeof data.glyphs; pts: P
   shu: { char: '十', pts: [[501.5, 839], [501.5, -80]] },
   // Start on the centerline of the left vertical, corner on both centerlines, end at the foot of the right vertical.
   hengzhe: { char: '口', pts: [[166, 697.5], [836, 697.5], [836, -51]] },
+  // Both ends are free: centre of the top face and centre of the tail face. The 捺 of 人 branches off the right edge below the start.
+  pie: { char: '人', pts: [[499, 837], [73.5, -46.5]] },
 };
 
 /** Which key point of the reference stroke is placed on the matching sample key point. Strokes without a corner use the start instead. */
