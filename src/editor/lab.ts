@@ -16,7 +16,7 @@ export interface LabContext {
 }
 
 const LIGHT = 24, HEAVY = 170;
-const REFERENCE_COLOR = '#c2409a';
+const REFERENCE_COLOR = '#0e9aa7';
 const MODES: { id: LabMode; label: string }[] = [
   { id: 'fill', label: 'Filled' },
   { id: 'nodes', label: 'Outline + nodes' },
