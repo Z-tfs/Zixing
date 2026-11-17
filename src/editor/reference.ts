@@ -22,6 +22,8 @@ const ALIGN: Partial<Record<StrokeType, { char: keyof typeof data.glyphs; pts: P
   pie: { char: '人', pts: [[499, 837], [73.5, -46.5]] },
   // Start where the 捺 centerline, extended upward, meets the 撇 centerline (estimated: the right edge of the 撇 is hidden under the 捺); end at the centre of the foot face.
   na: { char: '人', pts: [[486, 636.5], [938, -40]] },
+  // The right dot of 小, which runs down-right like the sample. Both ends are free: centre of the top face and centre of the bottom face.
+  dian: { char: '小', pts: [[741, 584.5], [935.5, 137.5]] },
 };
 
 /** Which key point of the reference stroke is placed on the matching sample key point. Strokes without a corner use the start instead. */
