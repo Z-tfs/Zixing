@@ -24,6 +24,8 @@ const ALIGN: Partial<Record<StrokeType, { char: keyof typeof data.glyphs; pts: P
   na: { char: '人', pts: [[486, 636.5], [938, -40]] },
   // The right dot of 小, which runs down-right like the sample. Both ends are free: centre of the top face and centre of the bottom face.
   dian: { char: '小', pts: [[741, 584.5], [935.5, 137.5]] },
+  // The 提 of the hand radical, crossing the 竖钩. Both ends are free: centre of the bottom-left start face and centre of the top-right tip face.
+  ti: { char: '打', pts: [[50.5, 273.5], [417.5, 378.5]] },
 };
 
 /** Which key point of the reference stroke is placed on the matching sample key point. Strokes without a corner use the start instead. */
